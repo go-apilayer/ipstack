@@ -93,18 +93,25 @@ func (c *Client) debugf(format string, v ...interface{}) {
 	}
 }
 
-type StandardOption struct {
-	Fields   string // follow the docs to compose this
+type RequestParam struct {
+	// Set to your preferred output field(s). Follow docs to compose this.
+	Fields string
+
+	// Enable Hostname Lookup.
 	HostName bool
+
+	// Enable the Security module.
 	Security bool
+
+	// Set to a 2-letter language code to change output language.
 	Language LangType
 }
 
 // Lookup (standard) looks up the data behind an IP address. IP can be IPv4, IPv6 or
 // domain URL (ipstack will resolve domain to the underlying IP address).
 //
-// Only first option struct will be used, do not pass more than one.
-func (c *Client) Lookup(IPAddr string, option ...StandardOption) (*Stack, error) {
+// Only first param struct is used, do not pass more than one.
+func (c *Client) Lookup(IPAddr string, params ...RequestParam) (*Stack, error) {
 	// deep copy URL
 	u := new(url.URL)
 	*u = *c.url
@@ -112,20 +119,20 @@ func (c *Client) Lookup(IPAddr string, option ...StandardOption) (*Stack, error)
 	u.Path = url.PathEscape(IPAddr)
 	q := u.Query()
 
-	if len(option) > 0 {
-		opt := option[0]
+	if len(params) > 0 {
+		param := params[0]
 
-		if opt.HostName {
+		if param.HostName {
 			q.Add("hostname", "1")
 		}
-		if opt.Security {
+		if param.Security {
 			q.Add("security", "1")
 		}
-		if opt.Language != "" {
-			q.Add("language", opt.Language.String())
+		if param.Language != "" {
+			q.Add("language", param.Language.String())
 		}
-		if opt.Fields != "" {
-			q.Add("fields", opt.Fields)
+		if param.Fields != "" {
+			q.Add("fields", param.Fields)
 		}
 	}
 	u.RawQuery = q.Encode()
@@ -183,7 +190,6 @@ func (c *Client) RequesterLookup() (*Stack, error) {
 //
 // Note: some fields (referred to as modules) are only available to certain
 // subscription plans. Make sure to check for existence prior to accessing their fields.
-// See comment below.
 type Stack struct {
 	IP            string   `json:"ip"`
 	Hostname      string   `json:"hostname"`
@@ -200,8 +206,8 @@ type Stack struct {
 	Longitude     float64  `json:"longitude"`
 	Location      Location `json:"location"`
 
-	// These fields varying depending on your subscription plan and
-	// may be nil.
+	// These fields varying depending on your subscription plan
+	// and may be nil.
 	TimeZone   *TimeZone   `json:"time_zone,omitempty"`
 	Currency   *Currency   `json:"currency,omitempty"`
 	Connection *Connection `json:"connection,omitempty"`
